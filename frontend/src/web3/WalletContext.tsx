@@ -6,10 +6,6 @@ declare global {
   interface Window {
     ethereum?: any;
     kasware?: any;
-
-    // EIP-6963 (Multi Injected Provider Discovery)
-    addEventListener: any;
-    removeEventListener: any;
   }
 }
 

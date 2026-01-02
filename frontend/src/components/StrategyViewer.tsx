@@ -315,11 +315,6 @@ export const StrategyViewer: React.FC<StrategyViewerProps> = ({
     }));
   }, [equity]);
 
-  const currentSnapshot = useMemo(() => {
-    if (!details?.positionsHistory?.length) return null;
-    return details.positionsHistory[details.positionsHistory.length - 1];
-  }, [details]);
-
   const yDomain = useMemo<[number, number]>(() => {
     if (!chartData.length) return [0.99, 1.01];
 
@@ -587,9 +582,6 @@ export const StrategyViewer: React.FC<StrategyViewerProps> = ({
                 : "—"}
               </span>
             </div>
-            {(() => {
-              const m = (currentPosition?.source === "signal" ? (lastSignalSnapshot as any)?.message : (lastSignalSnapshot as any)?.message) as any;
-            })()}
 
             <div className="timeline-positions">
               {sortPositionsForDisplay(currentPosition?.positions ?? lastSignalSnapshot?.positions ?? []).map((p: any, idx: number) => (

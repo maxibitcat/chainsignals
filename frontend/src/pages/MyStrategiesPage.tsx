@@ -154,7 +154,7 @@ const MyStrategiesPage: React.FC = () => {
                   const sharpe = statsAll?.sharpeAnnual;
                   const tr = statsAll?.totalReturn;
                   const vol = statsAll?.volAnnual;
-                  const dd = statsAll?.maxDrawdown;
+                  //const dd = statsAll?.maxDrawdown;
                   const isSelected = selectedStrategyId === s.id;
                   const endTs = (s.lastSegmentEndTs ?? s.lastSignalTs) || s.firstSignalTs;
                   const daysActive = Math.max(0, (endTs - s.firstSignalTs) / 86400);
