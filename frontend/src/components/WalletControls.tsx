@@ -28,6 +28,11 @@ function utf8ToHex(str: string): string {
 const WalletControls: React.FC = () => {
   const { address, balanceNative, nativeSymbol, isCorrectNetwork, connect, refreshBalance } = useWallet();
 
+  const isMobile = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }, []);
+
   const isConnectedForUI = !!address && isCorrectNetwork;
   const l2Address = isConnectedForUI ? address : null;
 
@@ -36,13 +41,26 @@ const WalletControls: React.FC = () => {
   const [bridging, setBridging] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
+  const balanceOneDecimal = useMemo(() => {
+    if (!balanceNative || balanceNative === "…") return balanceNative ?? "…";
+    const n = Number(balanceNative);
+    if (!Number.isFinite(n)) return balanceNative;
+    return n.toFixed(1);
+  }, [balanceNative]);
+
   const walletLabel = useMemo(() => {
     if (!address) return "Connect Wallet";
     if (!isCorrectNetwork) return "Wrong network";
+
+    const bal = balanceOneDecimal ?? "…";
+
+    // Mobile: only show the balance + symbol
+    if (isMobile) return `${bal} ${nativeSymbol}`;
+
+    // Desktop: show short address + balance
     const short = `${address.slice(0, 6)}…${address.slice(-4)}`;
-    const bal = balanceNative ?? "…";
     return `${short} · ${bal} ${nativeSymbol}`;
-  }, [address, isCorrectNetwork, balanceNative, nativeSymbol]);
+  }, [address, isCorrectNetwork, balanceOneDecimal, nativeSymbol, isMobile]);
 
   const handleWalletClick = async () => {
     // If disconnected or wrong network, trigger connect (which also best-effort switches chain).
@@ -113,7 +131,7 @@ const WalletControls: React.FC = () => {
         {walletLabel}
       </button>
 
-      {isConnectedForUI && (
+      {isConnectedForUI && !isMobile && (
         <>
           <button className="btn" onClick={() => setShowTopUp((s) => !s)}>
             Top up
