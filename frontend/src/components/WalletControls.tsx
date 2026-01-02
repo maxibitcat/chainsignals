@@ -20,6 +20,11 @@ function kasToSompi(amountStr: string): bigint {
   return BigInt(whole) * 100000000n + BigInt(frac);
 }
 
+function utf8ToHex(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 const WalletControls: React.FC = () => {
   const { address, balanceNative, nativeSymbol, isCorrectNetwork, connect, refreshBalance } = useWallet();
 
@@ -62,7 +67,16 @@ const WalletControls: React.FC = () => {
     }
 
     if (sompi < 100000000n) return alert("Minimum bridge amount is 1 KAS.");
-    if (!window.kasware) return alert("KasWare wallet is required for bridging.");
+    //if (!window.kasware) return alert("KasWare wallet is required for bridging.");
+    if (!window.kasware) {
+      const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+      if (sompi > maxSafe) return alert("Amount too large.");
+
+      const payloadHex = utf8ToHex(l2Address);
+      const href = `${KURVE_L1_BRIDGE_ADDRESS}?amount=${Number(sompi)}&payload=${encodeURIComponent(payloadHex)}`;
+      window.location.href = href;
+      return;
+    }
 
     const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
     if (sompi > maxSafe) return alert("Amount too large.");
