@@ -22,12 +22,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: "0.8rem",
 };
 
-function clampInt(n: number, lo: number, hi: number): number {
-  const x = Math.round(n);
-  if (!Number.isFinite(x)) return lo;
-  return Math.max(lo, Math.min(hi, x));
-}
-
 const MyStrategiesPage: React.FC = () => {
   const {
     address,
