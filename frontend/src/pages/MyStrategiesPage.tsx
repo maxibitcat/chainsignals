@@ -45,12 +45,34 @@ const MyStrategiesPage: React.FC = () => {
   const [strategy, setStrategy] = useState("");
   const [asset, setAsset] = useState<(typeof SUPPORTED_ASSETS)[number]>("BTC");
   const [direction, setDirection] = useState<number>(0);
-  const [leverage, setLeverage] = useState<number>(1);
-  const [percent, setPercent] = useState<number>(30);
+  const [leverageText, setLeverageText] = useState<string>("1");
+  const [leverageError, setLeverageError] = useState<string>("");
+  const [percentText, setPercentText] = useState<string>("30");
+  const [percentError, setPercentError] = useState<string>("");
   const [message, setMessage] = useState("");
   const [posting, setPosting] = useState(false);
 
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null);
+
+  function parseAllocation(text: string): { ok: boolean; value: number; err?: string } {
+    const t = text.trim();
+    if (t === "") return { ok: false, value: 0, err: "Required" };
+    if (!/^\d+$/.test(t)) return { ok: false, value: 0, err: "Integers only" };
+    const n = Number(t);
+    if (!Number.isFinite(n)) return { ok: false, value: 0, err: "Invalid number" };
+    if (n < 0 || n > 100) return { ok: false, value: 0, err: "Must be between 0 and 100" };
+    return { ok: true, value: n };
+  }
+
+  function parseLeverage(text: string): { ok: boolean; value: number; err?: string } {
+    const t = text.trim();
+    if (t === "") return { ok: false, value: 0, err: "Required" };
+    if (!/^\d+$/.test(t)) return { ok: false, value: 0, err: "Integers only" };
+    const n = Number(t);
+    if (!Number.isFinite(n)) return { ok: false, value: 0, err: "Invalid number" };
+    if (n < 1 || n > 5) return { ok: false, value: 0, err: "Must be between 1 and 5" };
+    return { ok: true, value: n };
+  }
 
   useEffect(() => {
     if (!isConnectedForUI || !address) {
@@ -79,16 +101,18 @@ const MyStrategiesPage: React.FC = () => {
     const msgTrimmed = message.trim();
     if (msgTrimmed.length > 280) return alert("Message must be <= 280 characters");
 
-    const pct = clampInt(percent, 0, 100);
+    const parsed = parseAllocation(percentText);
+    if (!parsed.ok) return alert("Target allocation: " + (parsed.err || "Invalid"));
+    const pct = parsed.value; // already 0–100 integer
 
     const directionToUse = asset === "USD" ? 0 : direction;
-    const leverageToUse = asset === "USD" ? 1 : leverage;
 
+    const levParsed = parseLeverage(leverageText);
     if (asset !== "USD") {
-      if (!Number.isFinite(leverage) || leverage < 1 || leverage > 5) {
-        return alert("Leverage must be between 1 and 5");
-      }
+      if (!levParsed.ok) return alert("Leverage: " + (levParsed.err || "Invalid"));
     }
+
+    const leverageToUse = asset === "USD" ? 1 : levParsed.value;
 
     setPosting(true);
     try {
@@ -259,33 +283,77 @@ const MyStrategiesPage: React.FC = () => {
           </label>
 
           <label style={{ fontSize: "0.8rem" }}>
-            Leverage (1–5x)
+            Leverage (1–5)
             <input
-              type="number"
-              min={1}
-              max={5}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="select"
               style={{ width: "100%", marginTop: 4 }}
-              value={leverage}
-              onChange={(e) => setLeverage(Number(e.target.value))}
-              disabled={!isConnectedForUI || asset === "USD"}
+              value={leverageText}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (next === "" || /^\d+$/.test(next)) {
+                  setLeverageText(next);
+                  setLeverageError("");
+                }
+              }}
+              onBlur={() => {
+                const parsed = parseLeverage(leverageText);
+                if (!parsed.ok) {
+                  setLeverageError(parsed.err || "Invalid");
+                } else {
+                  setLeverageText(String(parsed.value)); // normalize
+                  setLeverageError("");
+                }
+              }}
+              disabled={!isConnectedForUI}
+              placeholder="1–5"
             />
+            {leverageError && (
+              <div style={{ marginTop: 4, fontSize: "0.75rem", color: "var(--muted)" }}>
+                ⚠ {leverageError}
+              </div>
+            )}
           </label>
+
 
           <label style={{ fontSize: "0.8rem" }}>
             Target allocation (%)
             <input
-              type="number"
-              min={0}
-              max={100}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="select"
               style={{ width: "100%", marginTop: 4 }}
-              value={percent}
-              onChange={(e) => setPercent(Number(e.target.value))}
+              value={percentText}
+              onChange={(e) => {
+                const next = e.target.value;
+                // allow empty while editing; otherwise only digits
+                if (next === "" || /^\d+$/.test(next)) {
+                  setPercentText(next);
+                  setPercentError("");
+                }
+              }}
+              onBlur={() => {
+                const parsed = parseAllocation(percentText);
+                if (!parsed.ok) {
+                  setPercentError(parsed.err || "Invalid");
+                } else {
+                  // normalize (e.g. "007" -> "7")
+                  setPercentText(String(parsed.value));
+                  setPercentError("");
+                }
+              }}
               disabled={!isConnectedForUI}
+              placeholder="0–100"
             />
+            {percentError && (
+              <div style={{ marginTop: 4, fontSize: "0.75rem", color: "var(--muted)" }}>
+                ⚠ {percentError}
+              </div>
+            )}
           </label>
-
 
           <label style={{ fontSize: "0.8rem" }}>
             Message (optional, max 280 chars)
