@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useWallet } from "../web3/WalletContext";
 import { fetchTraderStrategies } from "../api";
 import type { TraderStrategiesResponse } from "../api";
@@ -47,6 +47,15 @@ const MyStrategiesPage: React.FC = () => {
   const [posting, setPosting] = useState(false);
 
   const [selectedStrategyId, setSelectedStrategyId] = useState<number | null>(null);
+
+  const existingStrategyNames = useMemo(() => {
+    const names = (data?.strategies ?? [])
+    .map((s) => s.strategyName?.trim())
+    .filter((n): n is string => Boolean(n));
+
+    // Unique names, keeping first-seen order
+    return Array.from(new Set(names));
+  }, [data]);
 
   function parseAllocation(text: string): { ok: boolean; value: number; err?: string } {
     const t = text.trim();
@@ -173,7 +182,7 @@ const MyStrategiesPage: React.FC = () => {
                   const tr = statsAll?.totalReturn;
                   const vol = statsAll?.volAnnual;
                   //const dd = statsAll?.maxDrawdown;
-                  const isSelected = selectedStrategyId === s.id;
+                    const isSelected = selectedStrategyId === s.id;
                   const endTs = (s.lastSegmentEndTs ?? s.lastSignalTs) || s.firstSignalTs;
                   const daysActive = Math.max(0, (endTs - s.firstSignalTs) / 86400);
 
@@ -239,8 +248,15 @@ const MyStrategiesPage: React.FC = () => {
               onChange={(e) => setStrategy(e.target.value)}
               placeholder="e.g. MOMENTUM"
               disabled={!isConnectedForUI}
+              list="strategy-names"
             />
+            <datalist id="strategy-names">
+              {existingStrategyNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </label>
+
 
           <label style={{ fontSize: "0.8rem" }}>
             Asset
