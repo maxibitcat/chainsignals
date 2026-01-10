@@ -258,7 +258,13 @@ function applySignalTargetPct(params: {
     const hasNonUsdExposure = Object.entries(buckets).some(
         ([sym, v]) => !isUsdAsset(sym) && (Number(v) || 0) > 0
     );
-    if (total <= 0 || !hasNonUsdExposure) {
+
+    const isBrandNewSeed =
+        Object.keys(buckets).length === 1 &&
+        (buckets["USD"] ?? 0) === 1.0 &&
+        !hasNonUsdExposure;
+
+    if (total <= 0 || isBrandNewSeed) {
         // Start with unit equity
         buckets[asset] = 1.0;
         // clear anything else
